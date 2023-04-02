@@ -24,4 +24,4 @@ $(OBJDIR):
 	mkdir $(OBJDIR)
 
 clean:
-	rm -fr $(OBJS) $(OBJDIR)
+	rm -fr $(OBJS) $(OBJDIR) main
