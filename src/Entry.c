@@ -1,12 +1,8 @@
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 #include <Board.h>
-
-#ifndef bool
-#define bool int
-#define true 1
-#define false 0
-#endif
+#include <Point.h>
+#include <bool.h>
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -17,6 +13,7 @@ SDL_Renderer* gRenderer = NULL;
 Board board;
 
 bool init();
+void handleMousePress(SDL_Event* e);
 void update(float dt);
 void draw();
 void close();
@@ -29,6 +26,7 @@ int main(void)
         return 1;
     }
 
+    bool lastPressed = false;
     bool quit = false;
     SDL_Event e;
     uint32_t lastUpdateTime = SDL_GetTicks();
@@ -40,6 +38,21 @@ int main(void)
             if (e.type == SDL_QUIT)
             {
                 quit = true;
+            }
+            else if(e.type == SDL_MOUSEBUTTONDOWN && !lastPressed)
+            {
+                if(e.button.button == SDL_BUTTON_LEFT)
+                {
+                    lastPressed = true;
+                    handleMousePress(&e);
+                }
+            }
+            else if(e.type == SDL_MOUSEBUTTONUP)
+            {
+                if(e.button.button == SDL_BUTTON_LEFT)
+                {
+                    lastPressed = false;
+                }
             }
         }
         SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
@@ -86,6 +99,17 @@ bool init()
     board = newBoard();
 
     return true;
+}
+
+void handleMousePress(SDL_Event* e)
+{
+    int x, y;
+    SDL_GetMouseState(&x, &y);
+    Point pos = {x, SCREEN_HEIGHT - y};
+    if(!tryMovePiece(&board, &pos))
+    {
+        trySelectPiece(&board, &pos);
+    }
 }
 
 void update(float dt)
