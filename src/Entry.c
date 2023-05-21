@@ -1,8 +1,9 @@
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
-#include <Board.h>
-#include <Point.h>
-#include <bool.h>
+#include <SDL2/SDL_image.h>
+#include "Game.h"
+#include "Point.h"
+#include "core.h"
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -10,13 +11,13 @@ const int SCREEN_HEIGHT = 480;
 SDL_Window* gWindow = NULL;
 SDL_Renderer* gRenderer = NULL;
 
-Board board;
+Game game;
 
 bool init();
-void handleMousePress(SDL_Event* e);
-void update(float dt);
+void handleMousePress();
 void draw();
 void close();
+bool endGameState();
 
 int main(void)
 {
@@ -29,10 +30,11 @@ int main(void)
     bool lastPressed = false;
     bool quit = false;
     SDL_Event e;
-    uint32_t lastUpdateTime = SDL_GetTicks();
 
     while (!quit)
     {
+        quit = endGameState();
+        
         while (SDL_PollEvent(&e))
         {
             if (e.type == SDL_QUIT)
@@ -58,10 +60,6 @@ int main(void)
         SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
         SDL_RenderClear(gRenderer);
 
-        float deltaTime = (SDL_GetTicks() - lastUpdateTime) / 1000.f;
-        update(deltaTime);
-        lastUpdateTime = SDL_GetTicks();
-
         draw();
         
         SDL_RenderPresent( gRenderer );
@@ -72,11 +70,24 @@ int main(void)
     return 0;
 }
 
+bool loadMedia()
+{
+    initMedia(gRenderer);
+    return true;
+}
+
 bool init()
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         printf("SDL could not initialize. SDL Error: %s\n", SDL_GetError());
+        return false;
+    }
+
+    int imgFlags = IMG_INIT_PNG;
+    if (!(IMG_Init(imgFlags) & imgFlags))
+    {
+        printf("SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
         return false;
     }
 
@@ -94,32 +105,53 @@ bool init()
         return false;
     }
 
+    if (!loadMedia())
+    {
+        printf("Failed to load media.");
+        return false;
+    }
+
     SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 
-    board = newBoard();
+    game = newGame();
 
     return true;
 }
 
-void handleMousePress(SDL_Event* e)
+void handleMousePress()
 {
     int x, y;
     SDL_GetMouseState(&x, &y);
     Point pos = {x, SCREEN_HEIGHT - y};
-    if(!tryMovePiece(&board, &pos))
-    {
-        trySelectPiece(&board, &pos);
-    }
-}
-
-void update(float dt)
-{
-
+    gameHandleMousePress(&game, &pos);
 }
 
 void draw()
 {
-    drawBoard(&board, gRenderer);
+    drawGame(&game, gRenderer);
+}
+
+bool endGameState()
+{
+    bool result = false;
+
+    if(hasWon(&game, true)) 
+    {
+        printf("White won\n");
+        result = true;
+    }
+    else if(hasWon(&game, false))
+    {
+        printf("Black won\n");
+        result = true;
+    }
+    else if(stalemate(&game))
+    {
+        printf("Stalemate\n");
+        result = true;
+    }
+
+    return result;
 }
 
 void close()

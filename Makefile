@@ -2,23 +2,20 @@ CC = clang
 CFLAGS = -Wall -Wpedantic -Wextra -std=c11
 DEBUG = -g
 
-INCLUDE_FLAGS = -Iinclude -I/usr/include/SDL2
-LINKER_FLAGS = -lSDL2
-SRCS = src/Entry.c src/Board.c
-OBJDIR = objects
+INCLUDE_FLAGS = -Iinclude -I/usr/include/SDL2 -I/usr/include/SDL_image
+LINKER_FLAGS = -lSDL2 -lSDL2_image
 
-OBJS = $(OBJDIR)/Board.o $(OBJDIR)/Entry.o
+SRCS = $(wildcard src/*.c)
+OBJDIR = objects
+OBJS = $(patsubst src/%.c,$(OBJDIR)/%.o,$(SRCS))
 
 ALL: main
 
 main: $(OBJDIR) $(OBJS)
 	$(CC) $(CFLAGS) $(DEBUG) $(LINKER_FLAGS) $(OBJS) -o main
 
-$(OBJDIR)/Board.o: src/Board.c $(HDR) $(OBJDIR)
-	$(CC) $(CFLAGS) $(DEBUG) -c src/Board.c $(INCLUDE_FLAGS) -o $(OBJDIR)/Board.o
-
-$(OBJDIR)/Entry.o: src/Entry.c $(HDR) $(OBJDIR)
-	$(CC) $(CFLAGS) $(DEBUG) -c src/Entry.c $(INCLUDE_FLAGS) -o $(OBJDIR)/Entry.o
+$(OBJS): $(OBJDIR)/%.o: src/%.c $(HDR) $(OBJDIR)
+	$(CC) $(CFLAGS) $(DEBUG) -c $< $(INCLUDE_FLAGS) -o $@
 
 $(OBJDIR):
 	mkdir $(OBJDIR)
